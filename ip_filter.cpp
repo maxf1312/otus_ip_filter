@@ -1,8 +1,13 @@
 #include <cassert>
 #include <cstdlib>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <algorithm>
+#include <tuple>
+#include <array>
+#include "ip_filter.h"
+
+
+namespace ip_filter
+{
 
 // ("",  '.') -> [""]
 // ("11", '.') -> ["11"]
@@ -10,9 +15,9 @@
 // ("11.", '.') -> ["11", ""]
 // (".11", '.') -> ["", "11"]
 // ("11.22", '.') -> ["11", "22"]
-std::vector<std::string> split(const std::string &str, char d)
+strings_t split(const std::string &str, char d)
 {
-    std::vector<std::string> r;
+    strings_t r;
 
     std::string::size_type start = 0;
     std::string::size_type stop = str.find_first_of(d);
@@ -29,101 +34,86 @@ std::vector<std::string> split(const std::string &str, char d)
     return r;
 }
 
-int main(int argc, char const *argv[])
+void load_ip_pool(std::istream& is, ip_pool_t& pool)
 {
-    try
+    for(std::string line; std::getline(is, line);)
     {
-        std::vector<std::vector<std::string> > ip_pool;
-
-        for(std::string line; std::getline(std::cin, line);)
-        {
-            std::vector<std::string> v = split(line, '\t');
-            ip_pool.push_back(split(v.at(0), '.'));
-        }
-
-        // TODO reverse lexicographically sort
-
-        for(std::vector<std::vector<std::string> >::const_iterator ip = ip_pool.cbegin(); ip != ip_pool.cend(); ++ip)
-        {
-            for(std::vector<std::string>::const_iterator ip_part = ip->cbegin(); ip_part != ip->cend(); ++ip_part)
-            {
-                if (ip_part != ip->cbegin())
-                {
-                    std::cout << ".";
-
-                }
-                std::cout << *ip_part;
-            }
-            std::cout << std::endl;
-        }
-
-        // 222.173.235.246
-        // 222.130.177.64
-        // 222.82.198.61
-        // ...
-        // 1.70.44.170
-        // 1.29.168.152
-        // 1.1.234.8
-
-        // TODO filter by first byte and output
-        // ip = filter(1)
-
-        // 1.231.69.33
-        // 1.87.203.225
-        // 1.70.44.170
-        // 1.29.168.152
-        // 1.1.234.8
-
-        // TODO filter by first and second bytes and output
-        // ip = filter(46, 70)
-
-        // 46.70.225.39
-        // 46.70.147.26
-        // 46.70.113.73
-        // 46.70.29.76
-
-        // TODO filter by any byte and output
-        // ip = filter_any(46)
-
-        // 186.204.34.46
-        // 186.46.222.194
-        // 185.46.87.231
-        // 185.46.86.132
-        // 185.46.86.131
-        // 185.46.86.131
-        // 185.46.86.22
-        // 185.46.85.204
-        // 185.46.85.78
-        // 68.46.218.208
-        // 46.251.197.23
-        // 46.223.254.56
-        // 46.223.254.56
-        // 46.182.19.219
-        // 46.161.63.66
-        // 46.161.61.51
-        // 46.161.60.92
-        // 46.161.60.35
-        // 46.161.58.202
-        // 46.161.56.241
-        // 46.161.56.203
-        // 46.161.56.174
-        // 46.161.56.106
-        // 46.161.56.106
-        // 46.101.163.119
-        // 46.101.127.145
-        // 46.70.225.39
-        // 46.70.147.26
-        // 46.70.113.73
-        // 46.70.29.76
-        // 46.55.46.98
-        // 46.49.43.85
-        // 39.46.86.85
-        // 5.189.203.46
+        strings_t v = split(line, '\t');
+        pool.push_back(split(v.at(0), '.'));
     }
-    catch(const std::exception &e)
-    {
-        std::cerr << e.what() << std::endl;
-    }
-
-    return 0;
 }
+
+ip_pool_t load_ip_pool(std::istream& is)
+{
+    ip_pool_t rv;
+    load_ip_pool(is, rv);
+    return rv;
+}
+
+std::ostream& out_ip_pool(std::ostream& os, const ip_pool_t& pool)
+{
+    for(const auto& ip: pool)
+    {
+        for( auto p_part = std::cbegin(ip); p_part != std::cend(ip); ++p_part )
+        {
+            if ( p_part != std::cbegin(ip) ) os << ".";
+            os << *p_part;
+        }
+        os << std::endl;     
+    }
+    return os;
+}
+
+ip_pool_t&  sort_ip_pool(ip_pool_t& pool, sort_order_t order)
+{
+    std::sort(std::begin(pool), std::end(pool),
+            [order](const auto& v1, const auto& v2)->bool {
+                auto t1 = std::tie(v1[0], v1[1], v1[2], v1[3]);
+                auto t2 = std::tie(v2[0], v2[1], v2[2], v2[3]);
+                return order == sort_order_t::ascending ? t1 < t2 : t2 < t1;
+            }
+    );
+    return pool;
+}
+
+ip_pool_t filter(ip_pool_t const& ip_pool, short b0, short b1, short b2, short b3)
+{
+    auto byte_cnv_str = [=](short b) -> std::string { return b >= 0 && b <= 255 ? std::to_string(b) : std::string(); };
+    std::array<std::string, 4> cmp_bytes = {byte_cnv_str(b0), byte_cnv_str(b1), byte_cnv_str(b2), byte_cnv_str(b3)};
+
+    ip_pool_t filtered;
+    std::copy_if(std::cbegin(ip_pool), std::cend(ip_pool), std::back_inserter(filtered), 
+        [&cmp_bytes](const auto& ip) -> bool {
+            size_t i = 0;
+            size_t n_match = std::count_if(std::cbegin(ip), std::cend(ip), 
+                                [&i, &cmp_bytes](const auto& ip_b) -> bool {
+                                    bool r = cmp_bytes[i].empty() || cmp_bytes[i] == ip_b;
+                                    ++i; 
+                                    return r; 
+                                }  
+                            );
+            return 4 == n_match;    
+        }
+    );
+    return filtered;
+}
+
+ip_pool_t filter_any(ip_pool_t const& ip_pool, short b_any)
+{
+    auto byte_cnv_str = [](short b) -> std::string { return b >= 0 && b <= 255 ? std::to_string(b) : std::string(); };
+    std::string b_any_s = byte_cnv_str(b_any); 
+
+    ip_pool_t filtered;
+    std::copy_if(std::cbegin(ip_pool), std::cend(ip_pool), std::back_inserter(filtered), 
+        [b_any_s](const auto& ip) -> bool {
+            return std::cend(ip) != std::find(std::cbegin(ip), std::cend(ip), b_any_s);
+        }
+    );
+
+    return filtered;
+}
+
+
+
+}; // ip_filter
+
