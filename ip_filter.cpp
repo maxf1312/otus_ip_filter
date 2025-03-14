@@ -66,10 +66,19 @@ std::ostream& out_ip_pool(std::ostream& os, const ip_pool_t& pool)
 
 ip_pool_t&  sort_ip_pool(ip_pool_t& pool, sort_order_t order)
 {
+    auto conv_to_vecshort = [](const auto& vec) -> std::vector<short> {
+        std::vector<short> vi;
+        std::transform(std::cbegin(vec), std::cend(vec), std::back_inserter(vi), 
+            [](const auto& ip_part){ return std::stoi(ip_part); } 
+        );
+        return vi;
+    };
+
     std::sort(std::begin(pool), std::end(pool),
-            [order](const auto& v1, const auto& v2)->bool {
-                auto t1 = std::tie(v1[0], v1[1], v1[2], v1[3]);
-                auto t2 = std::tie(v2[0], v2[1], v2[2], v2[3]);
+            [order, &conv_to_vecshort](const auto& v1, const auto& v2)->bool {
+                std::vector<short> vi1 = conv_to_vecshort(v1), vi2 = conv_to_vecshort(v2);
+                auto t1 = std::tie(vi1[0], vi1[1], vi1[2], vi1[3]);
+                auto t2 = std::tie(vi2[0], vi2[1], vi2[2], vi2[3]);
                 return order == sort_order_t::ascending ? t1 < t2 : t2 < t1;
             }
     );
