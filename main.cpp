@@ -4,15 +4,13 @@
 
 int main(int, char **) 
 {
-	using ip_filter::ip_pool_t;
+	using ip_filter::IPPool;
 	try
 	{
-		ip_pool_t ip_pool = ip_filter::load_ip_pool(std::cin);
-		ip_filter::sort_ip_pool(ip_pool);
-		ip_filter::out_ip_pool(std::cout, ip_pool);	
-		ip_filter::out_ip_pool(std::cout, ip_filter::filter(ip_pool, 1));	
-		ip_filter::out_ip_pool(std::cout, ip_filter::filter(ip_pool, 46, 70));	
-		ip_filter::out_ip_pool(std::cout, ip_filter::filter_any(ip_pool, 46));	
+		IPPool ip_pool; 
+		std::cin >> ip_pool;
+		std::cout << ip_pool.sort();
+		std::cout << ip_pool.filter(1) << ip_pool.filter(46, 70) << ip_pool.filter_any(46);	
 	}	
 	catch(const std::exception &e)
 	{

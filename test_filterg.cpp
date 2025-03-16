@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <sstream>
-#include "ip_filter.h"
+#include "ip_filter_impl.h"
 
 int main(int argc, char **argv)
 {
