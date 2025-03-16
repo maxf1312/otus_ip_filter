@@ -6,27 +6,30 @@
 #include <vector>
 #include <string>
 #include <array>
-
+#include "ip_filter_types.h"
 
 namespace ip_filter{
 
-
-using strings_t = std::vector<std::string>; 
-using ip_value_t = std::array<short, 4>; 
-using ip_pool_t = std::vector<ip_value_t>; 
-enum class sort_order_t
+class IPPool
 {
-    ascending,
-    descending
-};
-const short NO_FILTER_BYTE = -1;
+public:
+    explicit IPPool(): pool_{}{}
+    explicit IPPool(const ip_pool_t& rhs): pool_(rhs){}
+    IPPool(ip_pool_t&& rvl): pool_(rvl){}
+    
 
-strings_t split(const std::string &str, char d);
-ip_pool_t load_ip_pool( std::istream& is );
-std::ostream& out_ip_pool(std::ostream& os, const ip_pool_t& pool);
-ip_pool_t& sort_ip_pool(ip_pool_t& pool, sort_order_t order = sort_order_t::descending);
-ip_pool_t filter(ip_pool_t const& ip_pool, short b0, short b1 = NO_FILTER_BYTE, short b2 = NO_FILTER_BYTE, short b3 = NO_FILTER_BYTE);
-ip_pool_t filter_any(ip_pool_t const& ip_pool, short b_any);
+    std::istream& load( std::istream& is );
+    std::ostream& out(std::ostream& os) const;
+    IPPool& sort(sort_order_t order = sort_order_t::descending);
+    IPPool  filter(short b0, short b1 = NO_FILTER_BYTE, short b2 = NO_FILTER_BYTE, short b3 = NO_FILTER_BYTE) const;
+    IPPool  filter_any(short b_any) const;
+private:
+    ip_pool_t  pool_;
+};
+
+inline std::istream& operator>>(std::istream& is, IPPool& pool){ return pool.load(is); }
+inline std::ostream& operator<<(std::ostream& os, const IPPool& pool){ return pool.out(os); }
+    
 
 }; // ip_filter
 #endif //__IP_FILTER_H__

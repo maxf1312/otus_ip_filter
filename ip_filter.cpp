@@ -4,10 +4,38 @@
 #include <tuple>
 #include <array>
 #include "ip_filter.h"
+#include "ip_filter_impl.h"
 
 
 namespace ip_filter
 {
+
+std::istream& IPPool::load(std::istream &is)
+{
+    load_ip_pool(is, pool_);
+    return is;
+}
+
+std::ostream& IPPool::out(std::ostream &os) const
+{
+    return out_ip_pool(os, pool_);
+}
+
+IPPool& IPPool::sort(sort_order_t order)
+{
+    sort_ip_pool(pool_, order);
+    return *this;
+}
+
+IPPool IPPool::filter(short b0, short b1, short b2, short b3) const
+{
+    return ip_filter::filter(pool_, b0, b1, b2, b3);
+}
+
+IPPool IPPool::filter_any(short b_any) const
+{
+    return ip_filter::filter_any(pool_, b_any);
+}
 
 // ("",  '.') -> [""]
 // ("11", '.') -> ["11"]
@@ -34,21 +62,19 @@ strings_t split(const std::string &str, char d)
     return r;
 }
 
-void load_ip_pool(std::istream& is, ip_pool_t& pool)
+std::istream& load_ip_pool(std::istream& is, ip_pool_t& pool)
 {
     for(std::string line; std::getline(is, line);)
     {
         auto v = split(line, '\t');
         auto ip_v = split(v.at(0), '.');
         ip_value_t ip{};
-        //std::transform(ip_v.cbegin(), ip_v.cend(), ip.begin(), 
-        //    [](const auto& s_ip_part) -> u_int8_t{ return std::stoi(s_ip_part); }
-        //);
         std::transform(ip_v.cbegin(), ip_v.cend(), ip.begin(), 
             [](const auto& s_ip_part) -> u_int8_t{ return std::stoi(s_ip_part); }
         );
         pool.push_back(ip);
     }
+    return is;
 }
 
 ip_pool_t load_ip_pool(std::istream& is)
@@ -122,6 +148,4 @@ ip_pool_t filter_any(ip_pool_t const& ip_pool, short b_any)
 }
 
 
-
 }; // ip_filter
-
