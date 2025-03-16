@@ -21,7 +21,7 @@ TEST(ip_filterg, test_split)
 
 TEST(ip_filterg, test_load)
 {
-	ip_filter::ip_pool_t pool_etalon{{"1", "2", "3", "4"}, {"4", "3", "1", "4"}};
+	ip_filter::ip_pool_t pool_etalon{{1, 2, 3, 4}, {4, 3, 1, 4}};
     std::istringstream iss{"1.2.3.4\t23\t33\n4.3.1.4\t23\t33\n"};
 	ip_filter::ip_pool_t pool = ip_filter::load_ip_pool(iss);
     
@@ -30,7 +30,7 @@ TEST(ip_filterg, test_load)
 
 TEST(ip_filterg, test_out)
 {
-	ip_filter::ip_pool_t pool{{"1", "2", "3", "4"}, {"4", "3", "1", "4"}};
+	ip_filter::ip_pool_t pool{{1, 2, 3, 4}, {4, 3, 1, 4}};
     std::ostringstream oss; 
 	ip_filter::out_ip_pool(oss, pool);
     

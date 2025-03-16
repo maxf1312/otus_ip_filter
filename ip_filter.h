@@ -5,12 +5,15 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <optional>
+#include <array>
+
 
 namespace ip_filter{
 
+
 using strings_t = std::vector<std::string>; 
-using ip_pool_t = std::vector<strings_t>; 
+using ip_value_t = std::array<short, 4>; 
+using ip_pool_t = std::vector<ip_value_t>; 
 enum class sort_order_t
 {
     ascending,
@@ -18,12 +21,6 @@ enum class sort_order_t
 };
 const short NO_FILTER_BYTE = -1;
 
-// ("",  '.') -> [""]
-// ("11", '.') -> ["11"]
-// ("..", '.') -> ["", "", ""]
-// ("11.", '.') -> ["11", ""]
-// (".11", '.') -> ["", "11"]
-// ("11.22", '.') -> ["11", "22"]
 strings_t split(const std::string &str, char d);
 ip_pool_t load_ip_pool( std::istream& is );
 std::ostream& out_ip_pool(std::ostream& os, const ip_pool_t& pool);
