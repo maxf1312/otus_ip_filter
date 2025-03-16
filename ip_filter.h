@@ -2,10 +2,6 @@
 #ifndef __IP_FILTER_H__
 #define __IP_FILTER_H__
 
-#include <iostream>
-#include <vector>
-#include <string>
-#include <array>
 #include "ip_filter_types.h"
 
 namespace ip_filter{
